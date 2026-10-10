@@ -240,7 +240,9 @@ const createCreatureZones = (scene: Phaser.Scene): JungleZone[] => {
     debug.strokeCircle(zone.area.x, zone.area.y, zone.area.radius);
   }
 
-  debug.setVisible(import.meta.env.DEV);
+  debug.setVisible(
+    import.meta.env.DEV && new URLSearchParams(window.location.search).has('debug'),
+  );
   return zones;
 };
 

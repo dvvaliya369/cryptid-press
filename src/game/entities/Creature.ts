@@ -23,7 +23,16 @@ export type CreatureConfig = {
 };
 
 const PLAYER_REACTION_DISTANCE = 220;
+const REACTION_RELEASE_DISTANCE = 285;
 const FLASH_STUN_DURATION = 1800;
+const MOON_STAG_TEXTURES: Partial<Record<CreatureBehavior, string>> = {
+  idle: 'moon-stag-idle',
+  wandering: 'moon-stag-idle',
+  sleeping: 'moon-stag-idle',
+  eating: 'moon-stag-eating',
+  fleeing: 'moon-stag-fleeing',
+  stunned: 'moon-stag-idle',
+};
 
 export class Creature extends Phaser.Physics.Arcade.Sprite {
   private readonly config: CreatureConfig;
@@ -37,8 +46,12 @@ export class Creature extends Phaser.Physics.Arcade.Sprite {
   private baitTarget?: Bait;
 
   constructor(scene: Phaser.Scene, x: number, y: number, home: Phaser.Geom.Circle, config: CreatureConfig) {
-    const texture = `creature-${config.id}`;
-    createCreatureTexture(scene, texture, config.color, config.temperament);
+    const placeholderTexture = `creature-${config.id}`;
+    const dreamLayerTexture = config.id === 'moon-stag' ? MOON_STAG_TEXTURES.idle : undefined;
+    const texture = dreamLayerTexture && scene.textures.exists(dreamLayerTexture)
+      ? dreamLayerTexture
+      : placeholderTexture;
+    createCreatureTexture(scene, placeholderTexture, config.color, config.temperament);
     super(scene, x, y, texture);
 
     this.config = config;
@@ -50,6 +63,10 @@ export class Creature extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     this.setCollideWorldBounds(true);
     this.setDepth(15);
+
+    if (config.id === 'moon-stag' && texture !== placeholderTexture) {
+      this.setDisplaySize(118, 118);
+    }
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setCircle(23, 9, 11);
@@ -64,7 +81,9 @@ export class Creature extends Phaser.Physics.Arcade.Sprite {
       })
       .setOrigin(0.5)
       .setDepth(30)
-      .setVisible(import.meta.env.DEV);
+      .setVisible(
+        import.meta.env.DEV && new URLSearchParams(window.location.search).has('debug'),
+      );
 
     if (this.behavior === 'sleeping') {
       this.stateEndsAt = scene.time.now + Phaser.Math.Between(3500, 6500);
@@ -101,13 +120,23 @@ export class Creature extends Phaser.Physics.Arcade.Sprite {
     this.baitTarget = undefined;
     const playerDistance = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
 
-    if (this.config.temperament === 'aggressive' && playerDistance < PLAYER_REACTION_DISTANCE) {
+    const continueAttacking = this.behavior === 'attacking'
+      && playerDistance < REACTION_RELEASE_DISTANCE;
+    if (
+      this.config.temperament === 'aggressive'
+      && (playerDistance < PLAYER_REACTION_DISTANCE || continueAttacking)
+    ) {
       this.setBehavior('attacking');
       this.moveToward(player.x, player.y, this.config.speed * 1.35);
       return;
     }
 
-    if (this.config.temperament === 'timid' && playerDistance < PLAYER_REACTION_DISTANCE * 0.8) {
+    const continueFleeing = this.behavior === 'fleeing'
+      && playerDistance < REACTION_RELEASE_DISTANCE;
+    if (
+      this.config.temperament === 'timid'
+      && (playerDistance < PLAYER_REACTION_DISTANCE * 0.8 || continueFleeing)
+    ) {
       this.setBehavior('fleeing');
       const fleeDirection = new Phaser.Math.Vector2(this.x - player.x, this.y - player.y).normalize();
       this.setVelocity(fleeDirection.x * this.config.speed * 1.45, fleeDirection.y * this.config.speed * 1.45);
@@ -137,6 +166,14 @@ export class Creature extends Phaser.Physics.Arcade.Sprite {
 
   getBehavior(): CreatureBehavior {
     return this.behavior;
+  }
+
+  getCreatureId(): string {
+    return this.config.id;
+  }
+
+  getCreatureName(): string {
+    return this.config.name;
   }
 
   private updateWandering(time: number): void {
@@ -183,9 +220,23 @@ export class Creature extends Phaser.Physics.Arcade.Sprite {
   }
 
   private setBehavior(behavior: CreatureBehavior, duration = 0): void {
+    if (this.behavior === behavior) {
+      if (duration > 0) {
+        this.stateEndsAt = this.scene.time.now + duration;
+      }
+      return;
+    }
+
     this.behavior = behavior;
     this.stateEndsAt = duration > 0 ? this.scene.time.now + duration : 0;
     this.clearTint();
+
+    if (this.config.id === 'moon-stag') {
+      const texture = MOON_STAG_TEXTURES[behavior] ?? MOON_STAG_TEXTURES.idle;
+      if (texture && this.scene.textures.exists(texture)) {
+        this.setTexture(texture).setDisplaySize(118, 118);
+      }
+    }
 
     if (behavior === 'stunned') this.setTint(0xf8f1bf);
     if (behavior === 'eating') this.setTint(0xe7bc65);

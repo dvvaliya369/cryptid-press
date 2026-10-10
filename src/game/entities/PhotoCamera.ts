@@ -13,7 +13,11 @@ export type CapturedPhoto = {
   capturedAt: number;
   dataUrl: string;
   worldFrame: Phaser.Geom.Rectangle;
+  score: number;
+  caption: string;
 };
+
+export type PhotoDetails = Pick<CapturedPhoto, 'score' | 'caption'>;
 
 export class PhotoCamera extends Phaser.GameObjects.Container {
   private readonly frame: Phaser.GameObjects.Graphics;
@@ -23,6 +27,7 @@ export class PhotoCamera extends Phaser.GameObjects.Container {
   private previewBorder?: Phaser.GameObjects.Rectangle;
   private previewLabel?: Phaser.GameObjects.Text;
   private latestPhoto?: CapturedPhoto;
+  private pendingDetails: PhotoDetails = { score: 0, caption: '' };
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y);
@@ -53,12 +58,17 @@ export class PhotoCamera extends Phaser.GameObjects.Container {
     this.drawFrame(ready ? 0xf4eed9 : 0x73867a);
   }
 
-  capture(camera: Phaser.Cameras.Scene2D.Camera, hiddenObjects: HideableObject[]): boolean {
+  capture(
+    camera: Phaser.Cameras.Scene2D.Camera,
+    hiddenObjects: HideableObject[],
+    details: PhotoDetails,
+  ): boolean {
     if (this.scene.time.now < this.nextCaptureAt) {
       return false;
     }
 
     this.nextCaptureAt = this.scene.time.now + PHOTO_COOLDOWN;
+    this.pendingDetails = details;
 
     const screenX = Math.round((this.x - camera.worldView.left) * camera.zoom - PHOTO_FRAME_WIDTH / 2);
     const screenY = Math.round((this.y - camera.worldView.top) * camera.zoom - PHOTO_FRAME_HEIGHT / 2);
@@ -137,6 +147,8 @@ export class PhotoCamera extends Phaser.GameObjects.Container {
       capturedAt: Date.now(),
       dataUrl: image.src,
       worldFrame: this.getWorldFrame(),
+      score: this.pendingDetails.score,
+      caption: this.pendingDetails.caption,
     };
   }
 
@@ -162,7 +174,7 @@ export class PhotoCamera extends Phaser.GameObjects.Container {
       .setScrollFactor(0)
       .setDepth(301);
     this.previewLabel = this.scene.add
-      .text(GAME_WIDTH - 274, 28, 'LATEST PHOTO', {
+      .text(GAME_WIDTH - 274, 28, `LATEST PHOTO · ${this.pendingDetails.score} PTS`, {
         color: '#f4eed9',
         fontFamily: 'Arial, sans-serif',
         fontSize: '12px',

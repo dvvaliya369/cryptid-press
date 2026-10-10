@@ -1,0 +1,45 @@
+{
+  "visualDirection": "Top-down illustrated field journal, bold readable silhouettes, natural ink outlines, screen-printed color, subtle paper texture, no text, no border",
+  "assets": [
+    {
+      "id": "moon-stag-reference",
+      "status": "approved",
+      "operation": "text_to_image",
+      "prompt": "Single magical moon stag designed as a top-down 2D game creature, viewed from a high 70-degree overhead camera so the full back, head, and all four legs are clearly readable, compact white deer body, two symmetrical mirrored gold crescent antlers, luminous teal eyes, indigo and teal moon-phase markings along its back, bold clean silhouette for a small game sprite, illustrated naturalist field journal style, dark ink outline, screen-printed limited colors, complete body centered with generous empty space on every side, flat plain light neutral background, no scenery, no shadow, no text, no border, not side view, not portrait",
+      "rawPath": "art/generated/moon-stag-reference-v2.png",
+      "finalPath": "art/generated/moon-stag-reference-v2.png"
+    },
+    {
+      "id": "moon-stag-eating",
+      "status": "imported",
+      "operation": "image_to_image",
+      "reference": "moon-stag-reference",
+      "prompt": "Keep this exact creature, markings, colors, proportions, and top-down camera angle. Show it lowering its head to eat bait. Isolated full body on a plain neutral background, no text, no border.",
+      "finalPath": "public/assets/images/creatures/moon-stag-eating.png"
+    },
+    {
+      "id": "moon-stag-fleeing",
+      "status": "imported",
+      "operation": "image_to_image",
+      "reference": "moon-stag-reference",
+      "prompt": "Keep this exact creature, markings, colors, proportions, and top-down camera angle. Show it in a readable running and fleeing pose. Isolated full body on a plain neutral background, no text, no border.",
+      "finalPath": "public/assets/images/creatures/moon-stag-fleeing.png"
+    },
+    {
+      "id": "moon-stag-sleeping",
+      "status": "generated_raw",
+      "operation": "image_to_image",
+      "reference": "moon-stag-reference",
+      "prompt": "Keep this exact creature, symmetrical crescent antlers, moon markings, colors, proportions, ink-outline style, and overhead game camera. Show it curled safely on the ground in a clearly sleeping pose with closed eyes. Complete isolated body on a plain light neutral background, no scenery, no text, no border.",
+      "finalPath": "public/assets/images/creatures/moon-stag-sleeping.png"
+    },
+    {
+      "id": "moon-stag-stunned",
+      "status": "generated_raw",
+      "operation": "image_to_image",
+      "reference": "moon-stag-reference",
+      "prompt": "Keep this exact creature, symmetrical crescent antlers, moon markings, colors, proportions, ink-outline style, and overhead game camera. Show it standing unsteadily in a readable stunned pose with lowered head and small magical stars circling above it. Complete isolated body on a plain light neutral background, no scenery, no text, no border.",
+      "finalPath": "public/assets/images/creatures/moon-stag-stunned.png"
+    }
+  ]
+}

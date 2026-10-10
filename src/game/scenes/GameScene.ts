@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { SCENE_KEYS, WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 import { Bait } from '../entities/Bait';
 import { CameraReticle } from '../entities/CameraReticle';
+import { Creature, type CreatureConfig } from '../entities/Creature';
 import { PHOTO_FRAME_HEIGHT, PHOTO_FRAME_WIDTH, PhotoCamera } from '../entities/PhotoCamera';
 import { Player } from '../entities/Player';
 import { createJungleMap } from '../world/createJungleMap';
@@ -10,6 +11,13 @@ const FLASH_RADIUS = 250;
 const FLASH_COOLDOWN = 3000;
 const MAX_BAIT = 3;
 const BAIT_THROW_DISTANCE = 420;
+
+const CREATURE_CONFIGS: CreatureConfig[] = [
+  { id: 'moon-stag', name: 'Moon Stag', color: 0xd9e6d1, temperament: 'timid', speed: 90 },
+  { id: 'ember-moth', name: 'Ember Moth', color: 0xe8794a, temperament: 'curious', speed: 115 },
+  { id: 'mossback', name: 'Mossback', color: 0x7b9b52, temperament: 'aggressive', speed: 78 },
+  { id: 'glowhopper', name: 'Glowhopper', color: 0x6bc4b8, temperament: 'timid', speed: 125 },
+];
 
 export class GameScene extends Phaser.Scene {
   private player?: Player;
@@ -20,6 +28,7 @@ export class GameScene extends Phaser.Scene {
   private flashStatus?: Phaser.GameObjects.Text;
   private baitKey?: Phaser.Input.Keyboard.Key;
   private baitStatus?: Phaser.GameObjects.Text;
+  private creatures: Creature[] = [];
   private nextFlashAt = 0;
   private baitRemaining = MAX_BAIT;
 
@@ -34,6 +43,38 @@ export class GameScene extends Phaser.Scene {
     this.reticle = new CameraReticle(this, map.playerStart.x, map.playerStart.y - 120);
     this.photoCamera = new PhotoCamera(this, this.reticle.x, this.reticle.y);
     this.physics.add.collider(this.player, map.obstacles);
+    this.creatures = map.creatureZones.flatMap((zone, index) => {
+      const config = CREATURE_CONFIGS[index % CREATURE_CONFIGS.length];
+      if (!config) {
+        return [];
+      }
+
+      const first = new Creature(
+        this,
+        zone.area.x - 45,
+        zone.area.y + 15,
+        zone.area,
+        { ...config, initialBehavior: index === 1 ? 'sleeping' : 'idle' },
+      );
+      const second = new Creature(
+        this,
+        zone.area.x + 65,
+        zone.area.y - 35,
+        zone.area,
+        config,
+      );
+
+      this.physics.add.collider(first, map.obstacles);
+      this.physics.add.collider(second, map.obstacles);
+      return [first, second];
+    });
+
+    this.events.on('player-flash', this.handlePlayerFlash);
+    this.events.on('bait-landed', this.handleBaitLanded);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.events.off('player-flash', this.handlePlayerFlash);
+      this.events.off('bait-landed', this.handleBaitLanded);
+    });
 
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
     this.cameras.main.setDeadzone(180, 120);
@@ -116,6 +157,7 @@ export class GameScene extends Phaser.Scene {
     );
     this.photoCamera.update(time, this.reticle.x, this.reticle.y);
     this.player.update(time, this.reticle.x, this.reticle.y);
+    this.creatures.forEach((creature) => creature.update(time, this.player!));
 
     if (this.flashKey && Phaser.Input.Keyboard.JustDown(this.flashKey)) {
       this.activateFlash();
@@ -188,5 +230,13 @@ export class GameScene extends Phaser.Scene {
     this.baitRemaining -= 1;
     this.baitStatus.setText(`BAIT [Q]  ${this.baitRemaining}`);
     this.baitStatus.setColor(this.baitRemaining > 0 ? '#d99a59' : '#7f7064');
+  };
+
+  private readonly handlePlayerFlash = (effectArea: Phaser.Geom.Circle): void => {
+    this.creatures.forEach((creature) => creature.reactToFlash(effectArea));
+  };
+
+  private readonly handleBaitLanded = (bait: Bait, attractionArea: Phaser.Geom.Circle): void => {
+    this.creatures.forEach((creature) => creature.reactToBait(bait, attractionArea));
   };
 }

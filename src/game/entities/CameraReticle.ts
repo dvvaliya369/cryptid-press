@@ -19,14 +19,18 @@ export class CameraReticle extends Phaser.GameObjects.Container {
     this.setDepth(200);
   }
 
-  update(pointer: Phaser.Input.Pointer, camera: Phaser.Cameras.Scene2D.Camera): void {
+  update(
+    pointer: Phaser.Input.Pointer,
+    camera: Phaser.Cameras.Scene2D.Camera,
+    paddingX = 40,
+    paddingY = 40,
+  ): void {
     const worldPoint = camera.getWorldPoint(pointer.x, pointer.y);
     const view = camera.worldView;
-    const padding = 40;
 
     this.setPosition(
-      Phaser.Math.Clamp(worldPoint.x, view.left + padding, view.right - padding),
-      Phaser.Math.Clamp(worldPoint.y, view.top + padding, view.bottom - padding),
+      Phaser.Math.Clamp(worldPoint.x, view.left + paddingX, view.right - paddingX),
+      Phaser.Math.Clamp(worldPoint.y, view.top + paddingY, view.bottom - paddingY),
     );
   }
 }

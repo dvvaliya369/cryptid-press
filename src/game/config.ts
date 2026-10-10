@@ -3,7 +3,7 @@ import { GAME_HEIGHT, GAME_WIDTH } from './constants';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
 
-export function createGameConfig(parent: string): Phaser.Types.Core.GameConfig {
+export const createGameConfig = (parent: string): Phaser.Types.Core.GameConfig => {
   return {
     type: Phaser.AUTO,
     parent,
@@ -27,4 +27,4 @@ export function createGameConfig(parent: string): Phaser.Types.Core.GameConfig {
     },
     scene: [BootScene, GameScene],
   };
-}
+};
